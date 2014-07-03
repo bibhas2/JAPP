@@ -30,11 +30,13 @@ typedef struct _JSONParser {
 
 JSONParser *newJSONParser(String *dataToParse);
 void deleteJSONParser(JSONParser *parser);
-JSONObject *jsonParse(JSONParser *parser);
-String *jsonGetString(JSONObject *o);
-double jsonGetNumber(JSONObject *o);
-Dictionary *jsonGetObject(JSONObject *o);
-Array *jsonGetArray(JSONObject *o);
-bool jsonGetBoolean(JSONObject *o);
-bool jsonIsNull(JSONObject *o);
+JSONObject *jsonParseObject(JSONParser *parser);
+Array *jsonParseArray(JSONParser *parser);
+
+String *jsonGetString(JSONObject *o, const char *name);
+double jsonGetNumber(JSONObject *o, const char *name);
+Dictionary *jsonGetObject(JSONObject *o, const char *name);
+Array *jsonGetArray(JSONObject *o, const char *name);
+bool jsonGetBoolean(JSONObject *o, const char *name);
+bool jsonIsNull(JSONObject *o, const char *name);
 void jsonPrintObject(JSONObject *o);

@@ -45,34 +45,85 @@ void deleteJSONParser(JSONParser *parser) {
 
 	free(parser);
 }
-String *jsonGetString(JSONObject *o) {
-	assert(o->type == JSON_STRING);
-
-	return o->value.string;
-}
-
-double jsonGetNumber(JSONObject *o) {
-	assert(o->type == JSON_NUMBER);
-
-	return o->value.number;
-}
-Dictionary *jsonGetObject(JSONObject *o) {
+String *jsonGetString(JSONObject *o, const char *name) {
 	assert(o->type == JSON_OBJECT);
 
-	return o->value.object;
-}
-Array *jsonGetArray(JSONObject *o) {
-	assert(o->type == JSON_ARRAY);
+	JSONObject *child = dictionaryGet(o->value.object, name);
+	
+	if (child == NULL) {
+		return NULL; //Not found
+	}
+	assert(child->type == JSON_STRING);
 
-	return o->value.array;
+	return child->value.string;
 }
-bool jsonGetBoolean(JSONObject *o) {
-	assert(o->type == JSON_BOOLEAN);
 
-	return o->value.booleanValue;
+double jsonGetNumber(JSONObject *o, const char *name) {
+	assert(o->type == JSON_OBJECT);
+
+	JSONObject *child = dictionaryGet(o->value.object, name);
+	
+	if (child == NULL) {
+		return 0.0; //Not found
+	}
+
+	assert(child->type == JSON_NUMBER);
+
+	return child->value.number;
 }
-bool jsonIsNull(JSONObject *o) {
-	return(o->type == JSON_NULL);
+
+Dictionary *jsonGetObject(JSONObject *o, const char *name) {
+	assert(o->type == JSON_OBJECT);
+
+	JSONObject *child = dictionaryGet(o->value.object, name);
+	
+	if (child == NULL) {
+		return NULL; //Not found
+	}
+
+	assert(child->type == JSON_OBJECT);
+
+	return child->value.object;
+}
+
+Array *jsonGetArray(JSONObject *o, const char *name) {
+	assert(o->type == JSON_OBJECT);
+
+	JSONObject *child = dictionaryGet(o->value.object, name);
+	
+	if (child == NULL) {
+		return NULL; //Not found
+	}
+
+	assert(child->type == JSON_ARRAY);
+
+	return child->value.array;
+}
+
+bool jsonGetBoolean(JSONObject *o, const char *name) {
+	assert(o->type == JSON_OBJECT);
+
+	JSONObject *child = dictionaryGet(o->value.object, name);
+	
+	if (child == NULL) {
+		return false; //Not found
+	}
+
+	assert(child->type == JSON_BOOLEAN);
+
+	return child->value.booleanValue;
+}
+
+bool jsonIsNull(JSONObject *o, const char *name) {
+	assert(o->type == JSON_OBJECT);
+
+	JSONObject *child = dictionaryGet(o->value.object, name);
+	
+	if (child == NULL) {
+		return true; //Not found
+	}
+
+	return(child->type == JSON_NULL);
 }
 
 static char peek(JSONParser *parser) {
@@ -205,22 +256,26 @@ static JSONObject* parseValue(JSONParser *parser) {
 	return NULL;
 }
 
-JSONObject *jsonParse(JSONParser *parser) {
+JSONObject *jsonParseObject(JSONParser *parser) {
 	eatSpace(parser);
 
 	char ch = peek(parser);
 
 	FAIL(ch == 0, "Premature end of JSON string.");
+	FAIL(ch != '{', "Not a valid JSON object.");
 
-	if (ch == '{') {
-		return parseObject(parser);
-	} else if (ch == '[') {
-		Array *a = parseArray(parser);
-		JSONObject *o = newJSONObject(JSON_ARRAY);
-		o->value.array = a;
+	return parseObject(parser);
+}
 
-		return o;
-	}
+Array *jsonParseArray(JSONParser *parser) {
+	eatSpace(parser);
 
-	return NULL;
+	char ch = peek(parser);
+
+	FAIL(ch == 0, "Premature end of JSON string.");
+	FAIL(ch != '[', "Not a valid JSON array.");
+
+	Array *a = parseArray(parser);
+
+	return a;
 }
