@@ -4,7 +4,7 @@
 #include <ctype.h>
 #include "Parser.h"
 
-#define FAIL(cond, msg) if (cond) {puts(msg); return NULL;}
+#define FAIL(cond, msg) if (cond) {printf("%s %s:%d\n", msg, __FILE__, __LINE__); return NULL;}
 
 static int printDict(const char *key, void *value) {
 	printf("Key: \"%s\"\n", key);
@@ -45,6 +45,82 @@ void deleteJSONParser(JSONParser *parser) {
 
 	free(parser);
 }
+
+static JSONObject *
+getArrayObject(JSONObject *o, int index) {
+	assert(o->type == JSON_ARRAY);
+
+	return arrayGet(o->value.array, index);
+}
+
+String *jsonGetStringAt(JSONObject *a, int index) {
+	JSONObject *child = getArrayObject(a, index);
+	
+	if (child == NULL) {
+		return NULL; //Not found
+	}
+	assert(child->type == JSON_STRING);
+
+	return child->value.string;
+}
+
+double jsonGetNumberAt(JSONObject *a, int index) {
+	JSONObject *child = getArrayObject(a, index);
+	
+	if (child == NULL) {
+		return 0.0; //Not found
+	}
+	assert(child->type == JSON_NUMBER);
+
+	return child->value.number;
+}
+
+JSONObject *jsonGetObjectAt(JSONObject *a, int index) {
+	JSONObject *child = getArrayObject(a, index);
+	
+	if (child == NULL) {
+		return NULL; //Not found
+	}
+
+	assert(child->type == JSON_OBJECT);
+
+	return child;
+}
+
+JSONObject *jsonGetArrayAt(JSONObject *a, int index) {
+	JSONObject *child = getArrayObject(a, index);
+	
+	if (child == NULL) {
+		return NULL; //Not found
+	}
+
+	assert(child->type == JSON_ARRAY);
+
+	return child;
+}
+
+bool jsonGetBooleanAt(JSONObject *a, int index) {
+	JSONObject *child = getArrayObject(a, index);
+	
+	if (child == NULL) {
+		return false; //Not found
+	}
+
+	assert(child->type == JSON_BOOLEAN);
+
+	return child->value.booleanValue;
+}
+
+bool jsonIsNullAt(JSONObject *a, int index) {
+	JSONObject *child = getArrayObject(a, index);
+	
+	if (child == NULL) {
+		return true; //Not found
+	}
+
+	return(child->type == JSON_NULL);
+}
+
 String *jsonGetString(JSONObject *o, const char *name) {
 	assert(o->type == JSON_OBJECT);
 
@@ -72,7 +148,7 @@ double jsonGetNumber(JSONObject *o, const char *name) {
 	return child->value.number;
 }
 
-Dictionary *jsonGetObject(JSONObject *o, const char *name) {
+JSONObject *jsonGetObject(JSONObject *o, const char *name) {
 	assert(o->type == JSON_OBJECT);
 
 	JSONObject *child = dictionaryGet(o->value.object, name);
@@ -83,7 +159,7 @@ Dictionary *jsonGetObject(JSONObject *o, const char *name) {
 
 	assert(child->type == JSON_OBJECT);
 
-	return child->value.object;
+	return child;
 }
 
 Array *jsonGetArray(JSONObject *o, const char *name) {
@@ -223,7 +299,30 @@ static JSONObject *parseObject(JSONParser *parser) {
 }
 
 static Array* parseArray(JSONParser *parser) {
-	return NULL;
+	eatSpace(parser);
+
+	char ch = pop(parser);
+
+	FAIL(ch == 0, "Premature end of JSON string.");
+	FAIL(ch != '[', "Invalid JSON array.");
+
+	Array *a = newArray(25);
+
+	while ((ch = pop(parser)) != ']') {
+		FAIL(ch == 0, "Premature end of JSON string.");
+		
+		putback(parser);
+		JSONObject *o = parseValue(parser);
+		if (o != NULL) {
+			arrayAdd(a, o);
+		} 
+		eatSpace(parser);
+		if (pop(parser) != ',') {
+			putback(parser);
+		}
+	}
+
+	return a;
 }
 
 static JSONObject* parseValue(JSONParser *parser) {
@@ -267,7 +366,7 @@ JSONObject *jsonParseObject(JSONParser *parser) {
 	return parseObject(parser);
 }
 
-Array *jsonParseArray(JSONParser *parser) {
+JSONObject *jsonParseArray(JSONParser *parser) {
 	eatSpace(parser);
 
 	char ch = peek(parser);
@@ -276,6 +375,8 @@ Array *jsonParseArray(JSONParser *parser) {
 	FAIL(ch != '[', "Not a valid JSON array.");
 
 	Array *a = parseArray(parser);
+	JSONObject *o = newJSONObject(JSON_ARRAY);
+	o->value.array = a;
 
-	return a;
+	return o;
 }

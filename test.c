@@ -4,22 +4,20 @@
 
 int main() {
 	String *str = newStringWithCString(
-		" {\"key1\" : \"val1\", \"key2\":\"val2\"   }  "
+		"[\"a1\", \"a2\"]"
 		);
 	JSONParser *p = newJSONParser(str);
-	JSONObject *o = jsonParseObject(p);
+	JSONObject *o = jsonParseArray(p);
 
 	if (o == NULL) {
 		puts("Parsing failed.");
 		return 1;
 	}
-	String *s = jsonGetString(o, "key1");
+	String *s = jsonGetStringAt(o, 1);
 	if (s == NULL) {
 		puts("Not found.");
 		return 1;
 	}
-	puts(stringAsCString(s));
-	s = jsonGetString(o, "key2");
 	puts(stringAsCString(s));
 
 	return 0;
