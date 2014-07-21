@@ -21,5 +21,7 @@ int main() {
 	}
 	puts(stringAsCString(s));
 
+	deleteJSONObject(o);
+
 	return 0;
 }

@@ -39,6 +39,33 @@ JSONParser *newJSONParser(String *dataToParse) {
 
 	return parser;
 }
+
+int delete_object_properties(const char *key, void *value) {
+	deleteJSONObject((JSONObject*) value);
+
+	return 1;
+}
+
+void deleteJSONObject(JSONObject *o) {
+	if (o->type == JSON_STRING) {
+		deleteString(o->value.string);
+		o->value.string = NULL;
+	} else if (o->type == JSON_ARRAY) {
+		for (int i = 0; i < o->value.array->length; ++i) {
+			JSONObject *item = arrayGet(o->value.array, i);
+			deleteJSONObject(item);
+		}
+		deleteArray(o->value.array);
+		o->value.array = NULL;
+	} else if (o->type == JSON_OBJECT) {
+		dictionaryIterate(o->value.object, delete_object_properties);
+		deleteDictionary(o->value.object);
+		o->value.object = NULL;
+	}
+
+	free(o);
+}
+
 void deleteJSONParser(JSONParser *parser) {
 	parser->data = NULL;
 	parser->position = 0;

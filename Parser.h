@@ -31,6 +31,7 @@ typedef struct _JSONParser {
 JSONParser *newJSONParser(String *dataToParse);
 void deleteJSONParser(JSONParser *parser);
 JSONObject *jsonParse(JSONParser *parser);
+void deleteJSONObject(JSONObject *o);
 
 String *jsonGetString(JSONObject *o, const char *name);
 double jsonGetNumber(JSONObject *o, const char *name);
