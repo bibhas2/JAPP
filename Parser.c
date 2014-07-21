@@ -162,7 +162,7 @@ JSONObject *jsonGetObject(JSONObject *o, const char *name) {
 	return child;
 }
 
-Array *jsonGetArray(JSONObject *o, const char *name) {
+JSONObject *jsonGetArray(JSONObject *o, const char *name) {
 	assert(o->type == JSON_OBJECT);
 
 	JSONObject *child = dictionaryGet(o->value.object, name);
@@ -173,7 +173,7 @@ Array *jsonGetArray(JSONObject *o, const char *name) {
 
 	assert(child->type == JSON_ARRAY);
 
-	return child->value.array;
+	return child;
 }
 
 bool jsonGetBoolean(JSONObject *o, const char *name) {
@@ -355,28 +355,20 @@ static JSONObject* parseValue(JSONParser *parser) {
 	return NULL;
 }
 
-JSONObject *jsonParseObject(JSONParser *parser) {
+JSONObject *jsonParse(JSONParser *parser) {
 	eatSpace(parser);
 
 	char ch = peek(parser);
 
-	FAIL(ch == 0, "Premature end of JSON string.");
-	FAIL(ch != '{', "Not a valid JSON object.");
+	if (ch == '{') {
+		return parseObject(parser);
+	} else if (ch == '[') {
+		Array *a = parseArray(parser);
+		JSONObject *o = newJSONObject(JSON_ARRAY);
+		o->value.array = a;
 
-	return parseObject(parser);
-}
+		return o;
+	}
 
-JSONObject *jsonParseArray(JSONParser *parser) {
-	eatSpace(parser);
-
-	char ch = peek(parser);
-
-	FAIL(ch == 0, "Premature end of JSON string.");
-	FAIL(ch != '[', "Not a valid JSON array.");
-
-	Array *a = parseArray(parser);
-	JSONObject *o = newJSONObject(JSON_ARRAY);
-	o->value.array = a;
-
-	return o;
+	return NULL;
 }

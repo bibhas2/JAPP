@@ -4,16 +4,17 @@
 
 int main() {
 	String *str = newStringWithCString(
-		"[\"a1\", \"a2\"]"
+		"{\"array\":[\"a1\", \"a2\"]}"
 		);
 	JSONParser *p = newJSONParser(str);
-	JSONObject *o = jsonParseArray(p);
+	JSONObject *o = jsonParse(p);
 
 	if (o == NULL) {
 		puts("Parsing failed.");
 		return 1;
 	}
-	String *s = jsonGetStringAt(o, 1);
+	JSONObject *a = jsonGetArray(o, "array");
+	String *s = jsonGetStringAt(a, 1);
 	if (s == NULL) {
 		puts("Not found.");
 		return 1;
