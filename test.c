@@ -6,8 +6,8 @@ int main() {
 	String *str = newStringWithCString(
 		"{\"array\":[\"a1\", \"a2\"]}"
 		);
-	JSONParser *p = newJSONParser(str);
-	JSONObject *o = jsonParse(p);
+	JSONParser *p = newJSONParser();
+	JSONObject *o = jsonParse(p, str);
 
 	if (o == NULL) {
 		puts("Parsing failed.");
@@ -21,7 +21,9 @@ int main() {
 	}
 	puts(stringAsCString(s));
 
-	deleteJSONObject(o);
+	o = jsonParse(p, str);
+
+	deleteJSONParser(p);
 
 	return 0;
 }

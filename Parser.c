@@ -31,22 +31,35 @@ jsonPrintObject(JSONObject *o) {
 	}
 }
 
-JSONParser *newJSONParser(String *dataToParse) {
+JSONParser *newJSONParser() {
 	JSONParser *parser = malloc(sizeof(JSONParser));
 
-	parser->data = dataToParse;
+	parser->data = NULL;
+	parser->root = NULL;
 	parser->position = 0;
 
 	return parser;
 }
 
-int delete_object_properties(const char *key, void *value) {
+static void deleteJSONObject(JSONObject *o);
+
+void clearParser(JSONParser *parser) {
+	if (parser->root != NULL) {
+		deleteJSONObject(parser->root);
+		parser->root = NULL;
+	}
+
+	parser->data = NULL;
+	parser->position = 0;
+}
+
+static int delete_object_properties(const char *key, void *value) {
 	deleteJSONObject((JSONObject*) value);
 
 	return 1;
 }
 
-void deleteJSONObject(JSONObject *o) {
+static void deleteJSONObject(JSONObject *o) {
 	if (o->type == JSON_STRING) {
 		deleteString(o->value.string);
 		o->value.string = NULL;
@@ -67,8 +80,7 @@ void deleteJSONObject(JSONObject *o) {
 }
 
 void deleteJSONParser(JSONParser *parser) {
-	parser->data = NULL;
-	parser->position = 0;
+	clearParser(parser);
 
 	free(parser);
 }
@@ -382,20 +394,24 @@ static JSONObject* parseValue(JSONParser *parser) {
 	return NULL;
 }
 
-JSONObject *jsonParse(JSONParser *parser) {
+JSONObject *jsonParse(JSONParser *parser, String *stringToParse) {
+	clearParser(parser);
+
+	parser->data = stringToParse;
+
 	eatSpace(parser);
 
 	char ch = peek(parser);
 
 	if (ch == '{') {
-		return parseObject(parser);
+		parser->root = parseObject(parser);
 	} else if (ch == '[') {
 		Array *a = parseArray(parser);
 		JSONObject *o = newJSONObject(JSON_ARRAY);
 		o->value.array = a;
 
-		return o;
+		parser->root = o;
 	}
 
-	return NULL;
+	return parser->root;
 }

@@ -26,12 +26,12 @@ typedef struct _JSONObject {
 typedef struct _JSONParser {
 	String *data;
 	int position;
+	JSONObject *root;
 } JSONParser;
 
-JSONParser *newJSONParser(String *dataToParse);
+JSONParser *newJSONParser();
 void deleteJSONParser(JSONParser *parser);
-JSONObject *jsonParse(JSONParser *parser);
-void deleteJSONObject(JSONObject *o);
+JSONObject *jsonParse(JSONParser *parser, String *stringToParse);
 
 String *jsonGetString(JSONObject *o, const char *name);
 double jsonGetNumber(JSONObject *o, const char *name);
