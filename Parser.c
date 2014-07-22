@@ -304,7 +304,37 @@ static String* parseString(JSONParser *parser) {
 }
 
 static double parseNumber(JSONParser *parser) {
-	return 0.0;
+	eatSpace(parser);
+
+	String *s = newString();
+
+	while (1) {
+		char ch = pop(parser);
+
+		if (ch == 0) {
+			puts("Premature end of JSON string.");
+			deleteString(s);
+			return 0;
+		} else if (ch == '}' || ch == ']' || ch == ',') {
+			putback(parser);
+
+			break;
+		}
+
+		stringAppendChar(s, ch);
+	}
+	
+	double d = 0.0;
+	const char *str = stringAsCString(s);
+	if (sscanf(str, "%le", &d) == 0) {
+		printf("Failed to parse number from: %s\n", str);
+
+		d = 0.0;
+	}
+
+	deleteString(s);
+
+	return d;
 }
 
 static JSONObject *parseObject(JSONParser *parser) {

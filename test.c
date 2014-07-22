@@ -4,7 +4,7 @@
 
 int main() {
 	String *str = newStringWithCString(
-		"{\"array\":[\"a1\", \"a2\"]}"
+		"{\"array\":[10.5533E-2, \"a2\", 22.89], \"num\": 11.23}"
 		);
 	JSONParser *p = newJSONParser();
 	JSONObject *o = jsonParse(p, str);
@@ -13,15 +13,8 @@ int main() {
 		puts("Parsing failed.");
 		return 1;
 	}
-	JSONObject *a = jsonGetArray(o, "array");
-	String *s = jsonGetStringAt(a, 1);
-	if (s == NULL) {
-		puts("Not found.");
-		return 1;
-	}
-	puts(stringAsCString(s));
-
-	o = jsonParse(p, str);
+	double d = jsonGetNumber(o, "num");
+	printf("Number %g\n", d);
 
 	deleteJSONParser(p);
 
