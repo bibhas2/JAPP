@@ -1,7 +1,7 @@
 #include <stdbool.h>
-#include <String.h>
-#include <Dictionary.h>
-#include <Array.h>
+#include "../Cute/String.h"
+#include "../Cute/Dictionary.h"
+#include "../Cute/Array.h"
 
 typedef enum _JSONType {
 	JSON_STRING,
@@ -20,6 +20,7 @@ typedef struct _JSONObject {
 		Dictionary *object;
 		Array *array;
 		bool booleanValue;
+		bool isNull;
 	} value;
 } JSONObject;
 

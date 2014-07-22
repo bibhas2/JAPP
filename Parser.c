@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <assert.h>
 #include <ctype.h>
+#include <string.h>
 #include "Parser.h"
 
 #define FAIL(cond, msg) if (cond) {printf("%s %s:%d\n", msg, __FILE__, __LINE__); return NULL;}
@@ -157,7 +158,11 @@ bool jsonIsNullAt(JSONObject *a, int index) {
 		return true; //Not found
 	}
 
-	return(child->type == JSON_NULL);
+	if (child->type != JSON_NULL) {
+		return false;
+	}
+
+	return child->value.isNull;
 }
 
 String *jsonGetString(JSONObject *o, const char *name) {
@@ -238,7 +243,11 @@ bool jsonIsNull(JSONObject *o, const char *name) {
 		return true; //Not found
 	}
 
-	return(child->type == JSON_NULL);
+	if (child->type != JSON_NULL) {
+		return false;
+	}
+
+	return child->value.isNull;
 }
 
 static char peek(JSONParser *parser) {
@@ -262,7 +271,7 @@ static void putback(JSONParser *parser) {
 }
 
 JSONObject *newJSONObject(JSONType type) {
-	JSONObject *o = malloc(sizeof(JSONObject));
+	JSONObject *o = calloc(1, sizeof(JSONObject));
 
 	o->type = type;
 
@@ -303,7 +312,10 @@ static String* parseString(JSONParser *parser) {
 	return s;
 }
 
-static double parseNumber(JSONParser *parser) {
+/**
+ * Reads the text for next number, boolean and null value.
+ */
+static String *readValueToken(JSONParser *parser) {
 	eatSpace(parser);
 
 	String *s = newString();
@@ -314,7 +326,7 @@ static double parseNumber(JSONParser *parser) {
 		if (ch == 0) {
 			puts("Premature end of JSON string.");
 			deleteString(s);
-			return 0;
+			return NULL;
 		} else if (ch == '}' || ch == ']' || ch == ',') {
 			putback(parser);
 
@@ -323,9 +335,22 @@ static double parseNumber(JSONParser *parser) {
 
 		stringAppendChar(s, ch);
 	}
-	
+
+	stringTrim(s);
+
+	return s;
+}
+
+static double parseNumber(JSONParser *parser) {
+	String *s = readValueToken(parser);
+
+	if (s == NULL) {
+		return 0.0;
+	}
+
 	double d = 0.0;
 	const char *str = stringAsCString(s);
+
 	if (sscanf(str, "%le", &d) == 0) {
 		printf("Failed to parse number from: %s\n", str);
 
@@ -335,6 +360,43 @@ static double parseNumber(JSONParser *parser) {
 	deleteString(s);
 
 	return d;
+}
+
+static bool parseBool(JSONParser *parser) {
+	String *s = readValueToken(parser);
+
+	if (s == NULL) {
+		return false;
+	}
+
+	bool val = false;
+	
+	if (strcmp(stringAsCString(s), "true") == 0) {
+		val = true;
+	} else if (strcmp(stringAsCString(s), "false") == 0) {
+		val = false;
+	} else {
+		//Error
+		printf("Invalid boolean value: %s\n", stringAsCString(s));
+	}
+
+	deleteString(s);
+
+	return val;
+}
+
+static bool parseNull(JSONParser *parser) {
+	String *s = readValueToken(parser);
+
+	if (s == NULL) {
+		return false;
+	}
+
+	bool val = strcmp(stringAsCString(s), "null") == 0;
+
+	deleteString(s);
+
+	return val;
 }
 
 static JSONObject *parseObject(JSONParser *parser) {
@@ -419,7 +481,24 @@ static JSONObject* parseValue(JSONParser *parser) {
 		o->value.number = parseNumber(parser);
 
 		return o;
-	} //add true, false, null
+	} else if (ch == 't') {
+		JSONObject *o = newJSONObject(JSON_BOOLEAN);
+		o->value.booleanValue = parseBool(parser);
+
+		return o;
+	} else if (ch == 'f') {
+		JSONObject *o = newJSONObject(JSON_BOOLEAN);
+		o->value.booleanValue = parseBool(parser);
+
+		return o;
+	} else if (ch == 'n') {
+		JSONObject *o = newJSONObject(JSON_NULL);
+		o->value.isNull = parseNull(parser);
+
+		return o;
+	}
+
+ //add true, false, null
 
 	return NULL;
 }

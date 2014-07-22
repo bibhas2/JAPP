@@ -1,5 +1,5 @@
 CC=gcc
-CFLAGS=-std=c99 -I../Cute
+CFLAGS=-std=c99 
 OBJS=Parser.o
 HEADERS=Parser.h
 
