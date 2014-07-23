@@ -10,7 +10,7 @@ all: libjapp.a test
 libjapp.a: $(OBJS) 
 	ar rcs libjapp.a $(OBJS)
 test: $(OBJS) test.o
-	gcc -o test test.o -L../Cute -L. -lcute -ljapp -lm
+	gcc -o test test.o -L../Cute -L. -ljapp -lcute -lm
 clean:
 	rm $(OBJS)
 	rm libjapp.a
