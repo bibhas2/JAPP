@@ -304,7 +304,38 @@ static String* parseString(JSONParser *parser) {
 	String *s = newString();
 
 	while ((ch = pop(parser)) != '"') {
-		FAIL(ch == 0, "Premature end of JSON string.");
+		if (ch == 0) {
+			puts("Premature end of JSON string.");
+			deleteString(s);
+			return NULL;
+		}
+
+		if (ch == '\\') {
+			//Escape handling
+
+			char escaped = pop(parser);
+
+			if (escaped == 0) {
+				puts("Premature end of JSON string.");
+				deleteString(s);
+
+				return NULL;
+			}
+
+			if (escaped == 't') {
+				ch = '\t';
+			} else if (escaped == 'r') {
+				ch = '\r';
+			} else if (escaped == 'n') {
+				ch = '\n';
+			} else if (escaped == 'b') {
+				ch = '\b';
+			} else if (escaped == '"') {
+				ch = '"';
+			} else if (escaped == '\\') {
+				ch = '\\';
+			}
+		}
 
 		stringAppendChar(s, ch);
 	}

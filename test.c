@@ -4,8 +4,9 @@
 
 int main() {
 	String *str = newStringWithCString(
-		"{\"array\":[10.5533E-2, \"a2\", 22.89, true , false , null ], \"num\": 11.23}"
+		"{\"array\":[10.5533E-2, \"a\\\"2\", 22.89, true , false , null ], \"num\": 11.23}"
 		);
+	puts(stringAsCString(str));
 	JSONParser *p = newJSONParser();
 	JSONObject *o = jsonParse(p, str);
 
@@ -18,6 +19,8 @@ int main() {
 
 	JSONObject *a = jsonGetArray(o, "array");
 
+	printf("String is: %s\n",
+		stringAsCString(jsonGetStringAt(a, 1)));
 	printf("Bool is: %s\n",
 		jsonGetBooleanAt(a, 3) ? "true" : "false");
 	printf("Bool is: %s\n",
