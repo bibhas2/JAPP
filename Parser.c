@@ -293,6 +293,23 @@ static void eatSpace(JSONParser *parser) {
 
 static JSONObject* parseValue(JSONParser *parser);
 
+/*
+ * Code stolen from: http://stackoverflow.com/a/4609989/1036017
+ */
+static void unicodeToUTF8(int unicode, char *out, int *bytesWritten) {
+	char *pos = out;
+
+	if (unicode<0x80) *pos++=unicode;
+	else if (unicode<0x800) *pos++=192+unicode/64, *pos++=128+unicode%64;
+	else if (unicode-0xd800u<0x800) {}
+	else if (unicode<0x10000) *pos++=224+unicode/4096, *pos++=128+unicode/64%64, *pos++=128+unicode%64;
+	else if (unicode<0x110000) *pos++=240+unicode/262144, *pos++=128+unicode/4096%64, *pos++=128+unicode/64%64, *pos++=128+unicode%64;
+
+
+	*bytesWritten = (pos - out);
+}
+
+
 static String* parseString(JSONParser *parser) {
 	eatSpace(parser);
 
@@ -334,6 +351,34 @@ static String* parseString(JSONParser *parser) {
 				ch = '"';
 			} else if (escaped == '\\') {
 				ch = '\\';
+			} else if (escaped == 'u') {
+				//Unicode escape. Must be 2 hex digits.
+				char in[5];
+				
+				in[0] = pop(parser);
+				in[1] = pop(parser);
+				in[2] = pop(parser);
+				in[3] = pop(parser);
+				in[4] = '\0';
+
+				int unicode;
+				sscanf(in, "%04X", &unicode);
+
+				char out[4];
+				int bytesWritten;
+
+				unicodeToUTF8(unicode, out, &bytesWritten);
+
+				if (bytesWritten == 0) {
+					printf("Failed to convert UNICODE to UTF-8\n");
+					continue;
+				}
+
+				for (int i = 0; i < bytesWritten; ++i) {
+					stringAppendChar(s, out[i]);
+				}
+
+				continue;
 			}
 		}
 
