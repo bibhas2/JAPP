@@ -3,9 +3,8 @@
 #include "Parser.h"
 
 int main() {
-	String *str = newStringWithCString(
-		"{\"array\":[10.5533E-2, \"A\\u2665\", 22.89, true , false , null ], \"num\": 11.23}"
-		);
+	char *cStr = "{\"array\":[10.5533E-2, \"I \\u2665 Miami\", 22.89, true , false , null ], \"num\": 11.23}";
+	String *str = newStringWithCString(cStr);
 	puts(stringAsCString(str));
 	JSONParser *p = newJSONParser();
 	JSONObject *o = jsonParse(p, str);
@@ -20,7 +19,6 @@ int main() {
 	JSONObject *a = jsonGetArray(o, "array");
 
 	String *s = jsonGetStringAt(a, 1);
-	fwrite(s->buffer, s->length, 1, stdout);
 	printf("String is: %s\n",
 		stringAsCString(jsonGetStringAt(a, 1)));
 	printf("Bool is: %s\n",
@@ -32,6 +30,13 @@ int main() {
 	printf("Is null: %s\n",
 		jsonIsNullAt(a, 1) == true ? "true" : "false");
 
+
+	//Test C string API
+	o = jsonParseCString(p, cStr);
+	a = jsonGetArray(o, "array");
+
+	printf("String is %s\n", jsonGetCStringAt(a, 1));
+	
 	deleteJSONParser(p);
 
 	return 0;

@@ -104,6 +104,10 @@ String *jsonGetStringAt(JSONObject *a, int index) {
 	return child->value.string;
 }
 
+const char *jsonGetCStringAt(JSONObject *a, int index) {
+	return stringAsCString(jsonGetStringAt(a, index));
+}
+
 double jsonGetNumberAt(JSONObject *a, int index) {
 	JSONObject *child = getArrayObject(a, index);
 	
@@ -176,6 +180,10 @@ String *jsonGetString(JSONObject *o, const char *name) {
 	assert(child->type == JSON_STRING);
 
 	return child->value.string;
+}
+
+const char *jsonGetCString(JSONObject *o, const char *name) {
+	return stringAsCString(jsonGetString(o, name));
 }
 
 double jsonGetNumber(JSONObject *o, const char *name) {
@@ -577,6 +585,15 @@ static JSONObject* parseValue(JSONParser *parser) {
  //add true, false, null
 
 	return NULL;
+}
+
+JSONObject *jsonParseCString(JSONParser *parser, const char *stringToParse) {
+	String *str = newStringWithCString(stringToParse);
+	JSONObject *o = jsonParse(parser, str);
+
+	deleteString(str);
+
+	return o;
 }
 
 JSONObject *jsonParse(JSONParser *parser, String *stringToParse) {

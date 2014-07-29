@@ -29,18 +29,17 @@ Example JSON:
 }
 
 const char *json = "{...}"; //A JSON string as above.
-String *jsonString = stringFromCString(json); //Convert to a String
 JSONParser *p = newJSONParser();
-JSONObject *root = jsonParse(p, jsonString);
+JSONObject *root = jsonParseCString(p, json);
 
 double d = jsonGetNumber(root, "num"); //Will be 11.23
-String *s = jsonGetString(root, "first-name"); //"Barry white"
+const char *s = jsonGetCString(root, "first-name"); //"Barry white"
 
 JSONObject *array = jsonGetArray(root, "array");
 
 d = jsonGetNumberAt(array, 0); //10.5533E-2
-s = jsonGetStringAt(array, 1);
-printf("String is: %s\n", stringAsCString(s));
+s = jsonGetCStringAt(array, 1); //UTF-8 encoded multi byte string
+printf("String is: %s\n", s);
 
 bool b = jsonGetBooleanAt(array, 3); //true
 b = jsonIsNullAt(array, 5); //true
@@ -48,6 +47,18 @@ b = jsonIsNullAt(array, 0); //false
 
 deleteJSONParser(p); //Free all parsing related memory
 deleteString(jsonString);
+
+String handling
+===============
+Internally, JAPP uses the String data type to store string. I is a very simple
+data structure consisting of mainly a buffer and the length. Use of the String
+type will lead to faster string manipulation than NULL terminated C string. 
+If you choose to use String, then you can call the String version of
+the JAPP API functions. Such as:
+
+String *jsonString = stringFromCString(json); //Convert to a String
+JSONObject *root = jsonParse(p, jsonString);
+String *s = jsonGetString(root, "first-name"); //"Barry white"
 
 Memory management
 =================
