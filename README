@@ -61,10 +61,11 @@ String *s = jsonGetString(root, "first-name"); //"Barry white"
 
 Error handling
 ==============
-After parsing, check the errorCode property of the parser. If it is not ERROR_NONE
-then an error had occured. The errorLine property gives you an approximate
-line number of the document where the error took place. The errorMessage property
-gives a description of the problem.
+After parsing, check the errorCode property of the parser. If it
+is not ERROR_NONE then an error had occured. The errorLine property
+gives you an approximate line number of the document where the error
+took place. The errorMessage property gives a description of the
+problem.
 
 JSONParser *p = newJSONParser();
 JSONObject *o = jsonParse(p, str);
@@ -77,13 +78,13 @@ if (p->errorCode != ERROR_NONE) {
 
 Memory management
 =================
-All objects and strings returned by a parser method, such as jsonGetStringAt
-manages its own memory and you do not need to free them. Simply call
-deleteJSONParser() to destroy the parser and it will free up all
-memory every allocated by the parser.
+Memory for all objects and strings returned by a parser method,
+such as jsonGetStringAt is managed by the parser and you do not
+need to free them.  Simply call deleteJSONParser() to destroy the
+parser and it will free up all memory every allocated by the parser.
 
 Once a parser is created, it can be used repeatedly to call 
-jsonParse(). The parser will automatically delete all state for the previously
+jsonParse(). The parser will automatically free all memory for the previously
 parsed document before parsing the next one.
 
 
