@@ -62,6 +62,7 @@ int main(int argc, char *argv[]) {
 		jsonIsNullAt(a, 1) == true ? "true" : "false");
 
 	deleteJSONParser(p);
+	deleteString(str);
 
 	return 0;
 }
