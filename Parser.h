@@ -3,6 +3,12 @@
 #include "../Cute/Dictionary.h"
 #include "../Cute/Array.h"
 
+typedef enum _ErrorCode {
+	ERROR_NONE,
+	ERROR_INVALID_TYPE,
+	ERROR_SYNTAX
+} ErrorCode;
+
 typedef enum _JSONType {
 	JSON_STRING,
 	JSON_NUMBER,
@@ -27,6 +33,10 @@ typedef struct _JSONObject {
 typedef struct _JSONParser {
 	String *data;
 	int position;
+	int line;
+	const char *errorMessage;
+	int errorLine;
+	ErrorCode errorCode;
 	JSONObject *root;
 } JSONParser;
 

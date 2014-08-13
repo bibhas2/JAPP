@@ -5,7 +5,7 @@
 #include <string.h>
 #include "Parser.h"
 
-#define FAIL(cond, msg) if (cond) {printf("%s %s:%d\n", msg, __FILE__, __LINE__); return NULL;}
+#define FAIL(cond, p, code, msg) if (cond) {save_error(p, code, msg); return NULL;}
 
 static int printDict(const char *key, void *value) {
 	printf("Key: \"%s\"\n", key);
@@ -38,6 +38,9 @@ JSONParser *newJSONParser() {
 	parser->data = NULL;
 	parser->root = NULL;
 	parser->position = 0;
+	parser->errorLine = 0;
+	parser->errorCode = ERROR_NONE;
+	parser->errorMessage = NULL;
 
 	return parser;
 }
@@ -52,6 +55,9 @@ void clearParser(JSONParser *parser) {
 
 	parser->data = NULL;
 	parser->position = 0;
+	parser->errorLine = 0;
+	parser->errorCode = ERROR_NONE;
+	parser->errorMessage = NULL;
 }
 
 static int delete_object_properties(const char *key, void *value) {
@@ -84,6 +90,12 @@ void deleteJSONParser(JSONParser *parser) {
 	clearParser(parser);
 
 	free(parser);
+}
+
+void save_error(JSONParser *p, ErrorCode code, const char *msg) {
+	p->errorCode = code;
+	p->errorMessage = msg;
+	puts(msg);
 }
 
 static JSONObject *
@@ -271,11 +283,27 @@ static char pop(JSONParser *parser) {
 
 	parser->position += 1;
 
-	return stringGetChar(parser->data, parser->position - 1);
+	char ch = stringGetChar(parser->data, parser->position - 1);
+
+	if (ch == '\n') {
+		parser->errorLine += 1;
+	}
+
+	return ch;
 }
+
 static void putback(JSONParser *parser) {
 	assert(parser->position > 0);
 	parser->position -= 1;
+
+	char ch = stringGetChar(parser->data, parser->position);
+
+	/*
+	 * If we are putting back new line decrease line number.
+	 */
+	if (ch == '\n') {
+		parser->errorLine -= 1;
+	}
 }
 
 JSONObject *newJSONObject(JSONType type) {
@@ -323,14 +351,14 @@ static String* parseString(JSONParser *parser) {
 
 	char ch = pop(parser);
 
-	FAIL(ch == 0, "Premature end of JSON string.");
+	FAIL(ch == 0, parser, ERROR_SYNTAX, "Premature end of document while parsing string.");
 	assert(ch == '"');
 
 	String *s = newString();
 
 	while ((ch = pop(parser)) != '"') {
 		if (ch == 0) {
-			puts("Premature end of JSON string.");
+			save_error(parser, ERROR_SYNTAX, "Premature end of document while parsing string.");
 			deleteString(s);
 			return NULL;
 		}
@@ -341,7 +369,7 @@ static String* parseString(JSONParser *parser) {
 			char escaped = pop(parser);
 
 			if (escaped == 0) {
-				puts("Premature end of JSON string.");
+				save_error(parser, ERROR_SYNTAX, "Invalid escaped character in string.");
 				deleteString(s);
 
 				return NULL;
@@ -378,7 +406,7 @@ static String* parseString(JSONParser *parser) {
 				unicodeToUTF8(unicode, out, &bytesWritten);
 
 				if (bytesWritten == 0) {
-					printf("Failed to convert UNICODE to UTF-8\n");
+					save_error(parser, ERROR_SYNTAX, "Failed to convert UNICODE to UTF-8.");
 					continue;
 				}
 
@@ -408,7 +436,7 @@ static String *readValueToken(JSONParser *parser) {
 		char ch = pop(parser);
 
 		if (ch == 0) {
-			puts("Premature end of JSON string.");
+			save_error(parser, ERROR_SYNTAX, "Premature end of document while looking for a value.");
 			deleteString(s);
 			return NULL;
 		} else if (ch == '}' || ch == ']' || ch == ',') {
@@ -436,7 +464,7 @@ static double parseNumber(JSONParser *parser) {
 	const char *str = stringAsCString(s);
 
 	if (sscanf(str, "%le", &d) == 0) {
-		printf("Failed to parse number from: %s\n", str);
+		save_error(parser, ERROR_SYNTAX, "Failed to parse number.");
 
 		d = 0.0;
 	}
@@ -461,7 +489,7 @@ static bool parseBool(JSONParser *parser) {
 		val = false;
 	} else {
 		//Error
-		printf("Invalid boolean value: %s\n", stringAsCString(s));
+		save_error(parser, ERROR_SYNTAX, "Invalid boolean value.");
 	}
 
 	deleteString(s);
@@ -484,19 +512,22 @@ static bool parseNull(JSONParser *parser) {
 }
 
 static JSONObject *parseObject(JSONParser *parser) {
+	char ch = pop(parser);
+
+	FAIL(ch == 0, parser, ERROR_SYNTAX, "Premature end of document while parsing an object.");
+	FAIL(ch != '{', parser, ERROR_SYNTAX, "Object does not start with '{'");
+
 	JSONObject *o = newJSONObject(JSON_OBJECT);
 	Dictionary *d = newDictionary();
 	String *name = NULL;
 
 	o->value.object = d;
 
-	char ch = pop(parser);
-
-	FAIL(ch == 0, "Premature end of JSON string.");
-	FAIL(ch != '{', "Invalid JSON object format.");
-
 	while ((ch = pop(parser)) != '}') {
-		FAIL(ch == 0, "Premature end of JSON string.");
+		if (ch == 0) {
+			save_error(parser, ERROR_SYNTAX, "Premature end of document while parsing an object.");
+			break;
+		}
 
 		if (ch == '"') {
 			putback(parser);
@@ -508,6 +539,9 @@ static JSONObject *parseObject(JSONParser *parser) {
 			deleteString(name);
 			name = NULL;
 		}
+		if (parser->errorCode != ERROR_NONE) {
+			break;
+		}
 	}
 
 	return o;
@@ -518,21 +552,36 @@ static Array* parseArray(JSONParser *parser) {
 
 	char ch = pop(parser);
 
-	FAIL(ch == 0, "Premature end of JSON string.");
-	FAIL(ch != '[', "Invalid JSON array.");
+	FAIL(ch == 0, parser, ERROR_SYNTAX, "Premature end of documnent while parsing an array.");
+	FAIL(ch != '[', parser, ERROR_SYNTAX, "JSON array does not start with '['.");
 
 	Array *a = newArray(25);
 
 	while ((ch = pop(parser)) != ']') {
-		FAIL(ch == 0, "Premature end of JSON string.");
+		if (ch == 0) {
+			deleteArray(a);
+			save_error(parser, ERROR_SYNTAX, 
+				"Premature end of documnent while parsing an array.");
+			//Stop parsing array
+			break;
+		}
 		
 		putback(parser);
+
 		JSONObject *o = parseValue(parser);
 		if (o != NULL) {
 			arrayAdd(a, o);
 		} 
 		eatSpace(parser);
-		if (pop(parser) != ',') {
+		//Next character must be ',' or ']'
+		ch = pop(parser);
+		if (ch != ',' && ch != ']') {
+			deleteArray(a);
+			save_error(parser, ERROR_SYNTAX, "Invalid character in array.");
+			//Stop parsing array
+			break;
+		}
+		if (ch != ',') {
 			putback(parser);
 		}
 	}
@@ -545,7 +594,7 @@ static JSONObject* parseValue(JSONParser *parser) {
 
 	char ch = peek(parser);
 
-	FAIL(ch == 0, "Premature end of JSON string.");
+	FAIL(ch == 0, parser, ERROR_SYNTAX, "Premature end of JSON string.");
 
 	if (ch == '"') {
 		String *str = parseString(parser);
@@ -613,6 +662,8 @@ JSONObject *jsonParse(JSONParser *parser, String *stringToParse) {
 		o->value.array = a;
 
 		parser->root = o;
+	} else {
+		save_error(parser, ERROR_SYNTAX, "Document does not start with '{' or '['.");
 	}
 
 	return parser->root;

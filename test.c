@@ -2,16 +2,47 @@
 
 #include "Parser.h"
 
-int main() {
-	char *cStr = "{\"array\":[10.5533E-2, \"I \\u2665 Miami\", 22.89, true , false , null ], \"num\": 11.23}";
-	String *str = newStringWithCString(cStr);
-	puts(stringAsCString(str));
+String *loadFile(const char *file) {
+	FILE *f = fopen(file, "r");
+
+	if (f == NULL) {
+		return NULL;
+	}
+
+	String *s = newStringWithCapacity(1024);
+	char buffer[256];
+	size_t sz;
+
+	while ((sz = fread(buffer, 1, sizeof(buffer), f)) > 0) {
+		stringAppendBuffer(s, buffer, sz);
+		if (sz < sizeof(buffer)) {
+			break;
+		}
+	}
+
+	fclose(f);
+
+	return s;
+}
+
+int main(int argc, char *argv[]) {
+	if (argc < 2) {
+		puts("Usage: test json_file");
+		return 1;
+	}
+	String *str = loadFile(argv[1]);
+	if (str == NULL) {
+		puts("Could not load input JSON file.");
+		return 2;
+	}
+
 	JSONParser *p = newJSONParser();
 	JSONObject *o = jsonParse(p, str);
 
-	if (o == NULL) {
-		puts("Parsing failed.");
-		return 1;
+	if (p->errorCode != ERROR_NONE) {
+		printf("Parsing failed at line: %d. Message: %s\n",
+			p->errorLine, p->errorMessage);
+		return 3;
 	}
 	double d = jsonGetNumber(o, "num");
 	printf("Number %g\n", d);
@@ -30,13 +61,6 @@ int main() {
 	printf("Is null: %s\n",
 		jsonIsNullAt(a, 1) == true ? "true" : "false");
 
-
-	//Test C string API
-	o = jsonParseCString(p, cStr);
-	a = jsonGetArray(o, "array");
-
-	printf("String is %s\n", jsonGetCStringAt(a, 1));
-	
 	deleteJSONParser(p);
 
 	return 0;

@@ -1,0 +1,7 @@
+{
+	"array" : [10.5533E-2,
+		"I \u2665 Miami",
+		22.89, true , false , null,
+		],
+	"num" : 1234.56
+}

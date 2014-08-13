@@ -46,7 +46,6 @@ b = jsonIsNullAt(array, 5); //true
 b = jsonIsNullAt(array, 0); //false
 
 deleteJSONParser(p); //Free all parsing related memory
-deleteString(jsonString);
 
 String handling
 ===============
@@ -59,6 +58,22 @@ the JAPP API functions. Such as:
 String *jsonString = stringFromCString(json); //Convert to a String
 JSONObject *root = jsonParse(p, jsonString);
 String *s = jsonGetString(root, "first-name"); //"Barry white"
+
+Error handling
+==============
+After parsing, check the errorCode property of the parser. If it is not ERROR_NONE
+then an error had occured. The errorLine property gives you an approximate
+line number of the document where the error took place. The errorMessage property
+gives a description of the problem.
+
+JSONParser *p = newJSONParser();
+JSONObject *o = jsonParse(p, str);
+
+if (p->errorCode != ERROR_NONE) {
+        printf("Parsing failed at line: %d. Message: %s\n",
+                p->errorLine, p->errorMessage);
+        return 3;
+}
 
 Memory management
 =================
