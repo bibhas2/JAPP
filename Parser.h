@@ -45,6 +45,7 @@ void deleteJSONParser(JSONParser *parser);
 JSONObject *jsonParse(JSONParser *parser, String *stringToParse);
 JSONObject *jsonParseCString(JSONParser *parser, const char *stringToParse);
 
+//Get named properties of a JSON Object
 String *jsonGetString(JSONObject *o, const char *name);
 const char *jsonGetCString(JSONObject *o, const char *name);
 double jsonGetNumber(JSONObject *o, const char *name);
@@ -53,6 +54,9 @@ JSONObject *jsonGetArray(JSONObject *o, const char *name);
 bool jsonGetBoolean(JSONObject *o, const char *name);
 bool jsonIsNull(JSONObject *o, const char *name);
 
+//Get the number of items in a JSON array
+int jsonGetArrayLength(JSONObject *a);
+//Get indexed properties of a JSON array
 String *jsonGetStringAt(JSONObject *a, int index);
 const char *jsonGetCStringAt(JSONObject *a, int index);
 double jsonGetNumberAt(JSONObject *a, int index);

@@ -104,6 +104,12 @@ getArrayObject(JSONObject *o, int index) {
 	return arrayGet(o->value.array, index);
 }
 
+int jsonGetArrayLength(JSONObject *a) {
+	assert(a->type == JSON_ARRAY);
+
+	return a->value.array->length;
+}
+
 String *jsonGetStringAt(JSONObject *a, int index) {
 	JSONObject *child = getArrayObject(a, index);
 	
