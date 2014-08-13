@@ -95,7 +95,6 @@ void deleteJSONParser(JSONParser *parser) {
 void save_error(JSONParser *p, ErrorCode code, const char *msg) {
 	p->errorCode = code;
 	p->errorMessage = msg;
-	puts(msg);
 }
 
 static JSONObject *
@@ -523,13 +522,18 @@ static JSONObject *parseObject(JSONParser *parser) {
 
 	o->value.object = d;
 
-	while ((ch = pop(parser)) != '}') {
+	while (1) {
+		eatSpace(parser);
+		ch = pop(parser);
+
 		if (ch == 0) {
 			save_error(parser, ERROR_SYNTAX, "Premature end of document while parsing an object.");
 			break;
 		}
-
-		if (ch == '"') {
+		if (ch == '}') {
+			//End of object
+			break;
+		} else if (ch == '"') {
 			putback(parser);
 			name = parseString(parser);
 		} else if (ch == ':') {
@@ -538,6 +542,10 @@ static JSONObject *parseObject(JSONParser *parser) {
 				stringAsCString(name), val);
 			deleteString(name);
 			name = NULL;
+		} else if (ch == ',') {
+			//End of a property. Nothing to do here.
+		} else {
+			save_error(parser, ERROR_SYNTAX, "Invalid character in an object.");
 		}
 		if (parser->errorCode != ERROR_NONE) {
 			break;
