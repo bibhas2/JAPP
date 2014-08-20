@@ -24,6 +24,7 @@ Example JSON:
 
 {
   "array": [10.5533E-2, "I \u2665 Miami", 22.89, true , false , null ], 
+  "list" : ["One", "Two", "Three"],
   "num": 11.23,
   "first-name": "Barry white"
 }
@@ -44,6 +45,12 @@ printf("String is: %s\n", s);
 bool b = jsonGetBooleanAt(array, 3); //true
 b = jsonIsNullAt(array, 5); //true
 b = jsonIsNullAt(array, 0); //false
+
+//Array iteration
+JSONObject *list = jsonGetArray(root, "list");
+for (int i = 0; i < jsonGetArrayLength(list); ++i) {
+	s = jsonGetCStringAt(list, i);
+}
 
 deleteJSONParser(p); //Free all parsing related memory
 
