@@ -35,6 +35,8 @@ jsonPrintObject(JSONObject *o) {
 JSONParser *newJSONParser() {
 	JSONParser *parser = malloc(sizeof(JSONParser));
 
+	assert(parser != NULL);
+
 	parser->data = NULL;
 	parser->root = NULL;
 	parser->position = 0;
@@ -313,6 +315,8 @@ static void putback(JSONParser *parser) {
 
 JSONObject *newJSONObject(JSONType type) {
 	JSONObject *o = calloc(1, sizeof(JSONObject));
+
+	assert(o != NULL);
 
 	o->type = type;
 

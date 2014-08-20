@@ -94,4 +94,10 @@ Once a parser is created, it can be used repeatedly to call
 jsonParse(). The parser will automatically free all memory for the previously
 parsed document before parsing the next one.
 
+Any situation that can cause invalid memory access, causes the program to crash. This is
+done for safety. Common situations are:
+	- In case of any failure to allocate memory
+	- Buffer overflow or array index out of bounds
+	- Reading a JSON value using wrong type. For example, reading a String value using 
+	jsonGetNumber.
 
