@@ -112,8 +112,8 @@ parsed document before parsing the next one.
 Any situation that can cause invalid memory access, causes the program to abort. This is
 done for safety. Common situations are:
 
-	- In case of any failure to allocate memory
-	- Buffer overflow or array index out of bounds
-	- Reading a JSON value using wrong type. For example, reading a String value using 
-	jsonGetNumber.
+- In case of any failure to allocate memory
+- Buffer overflow or array index out of bounds
+- Reading a JSON value using wrong type. For example, reading a String value using 
+jsonGetNumber.
 
