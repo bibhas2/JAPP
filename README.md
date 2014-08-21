@@ -67,7 +67,7 @@ deleteJSONParser(p); //Free all parsing related memory
 
 ##String handling
 
-Internally, JAPP uses the String data type to store string. I is a very simple
+Internally, JAPP uses the String data type to store string. It is a very simple
 data structure consisting of mainly a buffer and the length. Use of the String
 type will lead to faster string manipulation than NULL terminated C string. 
 If you choose to use String, then you can call the String version of
@@ -79,8 +79,8 @@ JSONObject *root = jsonParse(p, jsonString);
 String *s = jsonGetString(root, "first-name"); //"Barry white"
 ```
 
-Error handling
-==============
+##Error handling
+
 After parsing, check the `errorCode` property of the parser. If it
 is not `ERROR_NONE` then an error had occured. The `errorLine` property
 gives you an approximate line number of the document where the error
@@ -103,7 +103,7 @@ if (p->errorCode != ERROR_NONE) {
 Memory for all objects and strings returned by a parser method,
 such as `jsonGetStringAt()` is managed by the parser and you do not
 need to free them.  Simply call `deleteJSONParser()` to destroy the
-parser and it will free up all memory every allocated by the parser.
+parser and it will free up all memory ever allocated by the parser.
 
 Once a parser is created, it can be used repeatedly to call 
 `jsonParse()`. The parser will automatically free all memory for the previously
@@ -111,6 +111,7 @@ parsed document before parsing the next one.
 
 Any situation that can cause invalid memory access, causes the program to abort. This is
 done for safety. Common situations are:
+
 	- In case of any failure to allocate memory
 	- Buffer overflow or array index out of bounds
 	- Reading a JSON value using wrong type. For example, reading a String value using 
