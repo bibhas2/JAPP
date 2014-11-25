@@ -247,6 +247,66 @@ JSONObject *jsonGetArray(JSONObject *o, const char *name) {
 	return child;
 }
 
+static JSONObject *_jsonGetByPath(JSONObject *o, const char *path) {
+	String *segment = newString();
+
+	while (*path != '\0') {
+		if (*path == '/') {
+			assert(o->type == JSON_OBJECT); //Parent must be object
+			o = dictionaryGet(o->value.object, 
+				stringAsCString(segment));	
+			segment->length = 0; //Reset
+		} else {
+			stringAppendChar(segment, *path);
+		}
+		++path;
+	}
+	if (segment->length > 0) {
+		assert(o->type == JSON_OBJECT); //Parent must be object
+		o = dictionaryGet(o->value.object, 
+			stringAsCString(segment));	
+	}
+
+	deleteString(segment);
+
+	return o;
+}
+
+/**
+ * Find an object  that descends from the given object by the object name
+ * hierarchy. All properties in the hierarchy must be objects (ie, can not
+ * be array).
+ */
+JSONObject *jsonGetObjectByPath(JSONObject *o, const char *path) {
+	o = _jsonGetByPath(o, path);
+
+	if (o == NULL) {
+		return NULL;
+	}
+
+	assert(o->type == JSON_OBJECT);
+
+	return o;
+}
+
+/**
+ * Find an array  that descends from the given object by the object name
+ * hierarchy. All properties in the hierarchy, except fo the last one,
+ * must be objects (ie, can not * be array). The last property in the
+ * path must be an array.
+ */
+JSONObject *jsonGetArrayByPath(JSONObject *o, const char *path) {
+	o = _jsonGetByPath(o, path);
+
+	if (o == NULL) {
+		return NULL;
+	}
+
+	assert(o->type == JSON_ARRAY);
+
+	return o;
+}
+
 bool jsonGetBoolean(JSONObject *o, const char *name) {
 	assert(o->type == JSON_OBJECT);
 

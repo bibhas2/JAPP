@@ -53,6 +53,8 @@ JSONObject *jsonGetObject(JSONObject *o, const char *name);
 JSONObject *jsonGetArray(JSONObject *o, const char *name);
 bool jsonGetBoolean(JSONObject *o, const char *name);
 bool jsonIsNull(JSONObject *o, const char *name);
+JSONObject *jsonGetObjectByPath(JSONObject *o, const char *path);
+JSONObject *jsonGetArrayByPath(JSONObject *o, const char *path);
 
 //Get the number of items in a JSON array
 int jsonGetArrayLength(JSONObject *a);
