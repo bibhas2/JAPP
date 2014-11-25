@@ -67,7 +67,7 @@ deleteJSONParser(p); //Free all parsing related memory
 
 ##String handling
 
-Internally, JAPP uses the String data type to store string. It is a very simple
+Internally, JAPP uses the String data type from Cute library to store string. It is a very simple
 data structure consisting of mainly a buffer and the length. Use of the String
 type will lead to faster string manipulation than NULL terminated C string. 
 If you choose to use String, then you can call the String version of
@@ -101,7 +101,7 @@ if (p->errorCode != ERROR_NONE) {
 ##Memory management
 
 Memory for all objects and strings returned by a parser method,
-such as `jsonGetStringAt()` is managed by the parser and you do not
+such as `jsonGetStringAt()` and `jsonGetObject()` is managed by the parser and you do not
 need to free them.  Simply call `deleteJSONParser()` to destroy the
 parser and it will free up all memory ever allocated by the parser.
 
