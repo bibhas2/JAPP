@@ -39,6 +39,9 @@ typedef struct _JSONParser {
 	int errorLine;
 	ErrorCode errorCode;
 	JSONObject *root;
+	int streamFd;
+	String *putbackBuffer;
+	char lastReadChar;
 	void (*onPropertyParsed)(struct _JSONParser* p, String *name, JSONObject *val);
 	void (*onValueParsed)(struct _JSONParser* p, JSONObject *val);
 } JSONParser;
@@ -46,6 +49,7 @@ typedef struct _JSONParser {
 JSONParser *newJSONParser();
 void deleteJSONParser(JSONParser *parser);
 JSONObject *jsonParse(JSONParser *parser, String *stringToParse);
+JSONObject *jsonParseStream(JSONParser *parser, int streamFd);
 JSONObject *jsonParseCString(JSONParser *parser, const char *stringToParse);
 
 //Get named properties of a JSON Object

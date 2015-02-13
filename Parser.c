@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <assert.h>
 #include <ctype.h>
+#include <unistd.h>
 #include <string.h>
 #include "Parser.h"
 
@@ -45,6 +46,9 @@ JSONParser *newJSONParser() {
 	parser->errorMessage = NULL;
 	parser->onPropertyParsed = NULL;
 	parser->onValueParsed = NULL;
+	parser->streamFd = -1;
+	parser->putbackBuffer = newString();
+	parser->lastReadChar = '\0';
 
 	return parser;
 }
@@ -62,6 +66,9 @@ void clearParser(JSONParser *parser) {
 	parser->errorLine = 0;
 	parser->errorCode = ERROR_NONE;
 	parser->errorMessage = NULL;
+	parser->streamFd = -1;
+	parser->putbackBuffer->length = 0;
+	parser->lastReadChar = '\0';
 }
 
 static int delete_object_properties(const char *key, void *value) {
@@ -99,6 +106,8 @@ static void deleteJSONObject(JSONObject *o) {
 void deleteJSONParser(JSONParser *parser) {
 	clearParser(parser);
 
+	deleteString(parser->putbackBuffer);
+
 	free(parser);
 }
 
@@ -107,6 +116,7 @@ static void onPropertyParsed(JSONParser *parser, String *name, JSONObject *val) 
 		parser->onPropertyParsed(parser, name, val);
 	}
 }
+
 static void onValueParsed(JSONParser *parser, JSONObject *val) {
 	if (parser->onValueParsed != NULL) {
 		parser->onValueParsed(parser, val);
@@ -356,40 +366,59 @@ bool jsonIsNull(JSONObject *o, const char *name) {
 	return child->value.isNull;
 }
 
-static char peek(JSONParser *parser) {
-	if (parser->position >= parser->data->length) {
-		return 0;
-	}
-	return stringGetChar(parser->data, parser->position);
-}
 static char pop(JSONParser *parser) {
-	if (parser->position >= parser->data->length) {
-		return 0;
+	char ch = '\0';
+
+	//If we have anything in putback buffer
+	//then return it.
+	if (parser->putbackBuffer->length > 0) {
+		ch = stringGetChar(
+			parser->putbackBuffer,
+			parser->putbackBuffer->length - 1);
+		parser->putbackBuffer->length -= 1;
+
+		return ch;
 	}
 
-	parser->position += 1;
+	if (parser->streamFd >= 0) {
+		read(parser->streamFd, &ch, sizeof(ch));
+	} else {
+		if (parser->position >= parser->data->length) {
+			return 0;
+		}
 
-	char ch = stringGetChar(parser->data, parser->position - 1);
+		parser->position += 1;
+
+		ch = stringGetChar(parser->data, parser->position - 1);
+	}
 
 	if (ch == '\n') {
 		parser->errorLine += 1;
 	}
 
+	parser->lastReadChar = ch;
+
 	return ch;
 }
 
 static void putback(JSONParser *parser) {
-	assert(parser->position > 0);
-	parser->position -= 1;
+	assert(parser->lastReadChar != '\0');
 
-	char ch = stringGetChar(parser->data, parser->position);
+	stringAppendChar(parser->putbackBuffer, parser->lastReadChar);
 
-	/*
-	 * If we are putting back new line decrease line number.
-	 */
-	if (ch == '\n') {
+	if (parser->lastReadChar == '\n') {
 		parser->errorLine -= 1;
 	}
+}
+
+static char peek(JSONParser *parser) {
+	char ch = pop(parser);
+
+	if (ch != '\0') {
+		putback(parser);
+	}
+
+	return ch;
 }
 
 JSONObject *newJSONObject(JSONType type) {
@@ -738,11 +767,7 @@ JSONObject *jsonParseCString(JSONParser *parser, const char *stringToParse) {
 	return o;
 }
 
-JSONObject *jsonParse(JSONParser *parser, String *stringToParse) {
-	clearParser(parser);
-
-	parser->data = stringToParse;
-
+JSONObject *begin_parse(JSONParser *parser) {
 	eatSpace(parser);
 
 	char ch = peek(parser);
@@ -760,4 +785,20 @@ JSONObject *jsonParse(JSONParser *parser, String *stringToParse) {
 	}
 
 	return parser->root;
+}
+
+JSONObject *jsonParse(JSONParser *parser, String *stringToParse) {
+	clearParser(parser);
+
+	parser->data = stringToParse;
+
+	return begin_parse(parser);
+}
+
+JSONObject *jsonParseStream(JSONParser *parser, int streamFd) {
+	clearParser(parser);
+
+	parser->streamFd = streamFd;
+
+	return begin_parse(parser);
 }
