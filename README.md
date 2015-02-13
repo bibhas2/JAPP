@@ -78,7 +78,9 @@ document as a string.
 int fd = open(...); //Open a file or network socket
 
 JSONParser *p = newJSONParser();
-JSONObject *o = jsonParseStream(p, 0);
+JSONObject *o = jsonParseStream(p, fd);
+
+close(fd);
 ```
 
 ##Callback Based Processing
@@ -156,7 +158,7 @@ void onValueParsed(JSONParser *p, JSONObject *o) {
 of objects you can process very large documents with almost constant memory
 usage.
 
-##String handling
+##String Handling
 
 Internally, JAPP uses the String data type from Cute library to store string. It is a very simple
 data structure consisting of mainly a buffer and the length. Use of the String
@@ -164,18 +166,18 @@ type will lead to faster string manipulation than NULL terminated C string.
 If you choose to use String, then you can call the String version of
 the JAPP API functions. Such as:
 
-```
+```c
 String *jsonString = stringFromCString(json); //Convert to a String
 JSONObject *root = jsonParse(p, jsonString);
 String *s = jsonGetString(root, "first-name"); //"Barry white"
 ```
 
-##Error handling
+##Error Handling
 
-After parsing, check the `errorCode` property of the parser. If it
-is not `ERROR_NONE` then an error had occured. The `errorLine` property
+After parsing, check the ``errorCode`` property of the parser. If it
+is not ``ERROR_NONE`` then an error had occured. The ``errorLine`` property
 gives you an approximate line number of the document where the error
-took place. The `errorMessage` property gives a description of the
+took place. The ``errorMessage`` property gives a description of the
 problem.
 
 ```
