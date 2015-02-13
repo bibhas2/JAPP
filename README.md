@@ -27,7 +27,7 @@ make
 
 Example JSON:
 
-```
+```json
 {
   "array": [10.5533E-2, "I \u2665 Miami", 22.89, true , false , null ], 
   "list" : ["One", "Two", "Three"],
@@ -42,7 +42,7 @@ Example JSON:
 
 Prasing example:
 
-```
+```c
 const char *json = "{...}"; //A JSON string as above.
 JSONParser *p = newJSONParser();
 JSONObject *root = jsonParseCString(p, json);
@@ -76,6 +76,7 @@ document as a string.
 
 ```c
 int fd = open(...); //Open a file or network socket
+
 JSONParser *p = newJSONParser();
 JSONObject *o = jsonParseStream(p, 0);
 ```
@@ -118,7 +119,7 @@ void onValueParsed(JSONParser *p, JSONObject *o) {
 	}
 }
 
-//...
+//Register the callbacks
 
 JSONParser *p = newJSONParser();
 
