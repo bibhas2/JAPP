@@ -10,6 +10,7 @@ typedef enum _ErrorCode {
 } ErrorCode;
 
 typedef enum _JSONType {
+	JSON_UNDEFINED,
 	JSON_STRING,
 	JSON_NUMBER,
 	JSON_OBJECT,
@@ -38,6 +39,8 @@ typedef struct _JSONParser {
 	int errorLine;
 	ErrorCode errorCode;
 	JSONObject *root;
+	void (*onPropertyParsed)(struct _JSONParser* p, String *name, JSONObject *val);
+	void (*onValueParsed)(struct _JSONParser* p, JSONObject *val);
 } JSONParser;
 
 JSONParser *newJSONParser();
@@ -68,3 +71,10 @@ bool jsonGetBooleanAt(JSONObject *a, int index);
 bool jsonIsNullAt(JSONObject *a, int index);
 
 void jsonPrintObject(JSONObject *o);
+
+/**
+ * Deletes all children objects of a given JSONObject amd
+ * frees up memory for them. The given JSONObject itself
+ * is not destroyed but its type is set to JSON_UNDEFINED.
+ */
+void jsonClear(JSONObject *o);

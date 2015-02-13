@@ -43,6 +43,8 @@ JSONParser *newJSONParser() {
 	parser->errorLine = 0;
 	parser->errorCode = ERROR_NONE;
 	parser->errorMessage = NULL;
+	parser->onPropertyParsed = NULL;
+	parser->onValueParsed = NULL;
 
 	return parser;
 }
@@ -68,7 +70,7 @@ static int delete_object_properties(const char *key, void *value) {
 	return 1;
 }
 
-static void deleteJSONObject(JSONObject *o) {
+void jsonClear(JSONObject *o) {
 	if (o->type == JSON_STRING) {
 		deleteString(o->value.string);
 		o->value.string = NULL;
@@ -85,6 +87,12 @@ static void deleteJSONObject(JSONObject *o) {
 		o->value.object = NULL;
 	}
 
+	o->type = JSON_UNDEFINED;
+}
+
+static void deleteJSONObject(JSONObject *o) {
+	jsonClear(o);
+
 	free(o);
 }
 
@@ -92,6 +100,17 @@ void deleteJSONParser(JSONParser *parser) {
 	clearParser(parser);
 
 	free(parser);
+}
+
+static void onPropertyParsed(JSONParser *parser, String *name, JSONObject *val) {
+	if (parser->onPropertyParsed != NULL) {
+		parser->onPropertyParsed(parser, name, val);
+	}
+}
+static void onValueParsed(JSONParser *parser, JSONObject *val) {
+	if (parser->onValueParsed != NULL) {
+		parser->onValueParsed(parser, val);
+	}
 }
 
 void save_error(JSONParser *p, ErrorCode code, const char *msg) {
@@ -610,6 +629,7 @@ static JSONObject *parseObject(JSONParser *parser) {
 			JSONObject *val = parseValue(parser);
 			dictionaryPut(d, 
 				stringAsCString(name), val);
+			onPropertyParsed(parser, name, val);
 			deleteString(name);
 			name = NULL;
 		} else if (ch == ',') {
@@ -638,6 +658,7 @@ static Array* parseArray(JSONParser *parser) {
 	while ((ch = pop(parser)) != ']') {
 		if (ch == 0) {
 			deleteArray(a);
+			a = NULL;
 			save_error(parser, ERROR_SYNTAX, 
 				"Premature end of documnent while parsing an array.");
 			//Stop parsing array
@@ -655,6 +676,7 @@ static Array* parseArray(JSONParser *parser) {
 		ch = pop(parser);
 		if (ch != ',' && ch != ']') {
 			deleteArray(a);
+			a = NULL;
 			save_error(parser, ERROR_SYNTAX, "Invalid character in array.");
 			//Stop parsing array
 			break;
@@ -668,6 +690,8 @@ static Array* parseArray(JSONParser *parser) {
 }
 
 static JSONObject* parseValue(JSONParser *parser) {
+	JSONObject *o = NULL;
+
 	eatSpace(parser);
 
 	char ch = peek(parser);
@@ -676,42 +700,33 @@ static JSONObject* parseValue(JSONParser *parser) {
 
 	if (ch == '"') {
 		String *str = parseString(parser);
-		JSONObject *o = newJSONObject(JSON_STRING);
+
+		o = newJSONObject(JSON_STRING);
 		o->value.string = str;
-		return o;
 	} else if (ch == '{') {
-		return parseObject(parser);
+		o = parseObject(parser);
 	} else if (ch == '[') {
 		Array *a = parseArray(parser);
-		JSONObject *o = newJSONObject(JSON_ARRAY);
+
+		o = newJSONObject(JSON_ARRAY);
 		o->value.array = a;
-
-		return o;
-	} else if (isdigit(ch)) {
-		JSONObject *o = newJSONObject(JSON_NUMBER);
+	} else if (isdigit(ch) || ch == '-') {
+		o = newJSONObject(JSON_NUMBER);
 		o->value.number = parseNumber(parser);
-
-		return o;
 	} else if (ch == 't') {
-		JSONObject *o = newJSONObject(JSON_BOOLEAN);
+		o = newJSONObject(JSON_BOOLEAN);
 		o->value.booleanValue = parseBool(parser);
-
-		return o;
 	} else if (ch == 'f') {
-		JSONObject *o = newJSONObject(JSON_BOOLEAN);
+		o = newJSONObject(JSON_BOOLEAN);
 		o->value.booleanValue = parseBool(parser);
-
-		return o;
 	} else if (ch == 'n') {
-		JSONObject *o = newJSONObject(JSON_NULL);
+		o = newJSONObject(JSON_NULL);
 		o->value.isNull = parseNull(parser);
-
-		return o;
 	}
 
- //add true, false, null
+	onValueParsed(parser, o);
 
-	return NULL;
+	return o;
 }
 
 JSONObject *jsonParseCString(JSONParser *parser, const char *stringToParse) {
